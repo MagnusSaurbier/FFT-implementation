@@ -1,19 +1,26 @@
 import tkinter
 from DFT import Function
 from DFT import fourier
+import matplotlib.pyplot as plt
 # Tkinter Window
 root = tkinter.Tk()
 root.title("Plot Input")
-width, height = 2**10, 768
+width, height = 2**10, 648
 #root.geometry(f"{width}x{height}")
 
 # Canvas to draw a Function into
 canvas = tkinter.Canvas(root, width=width, height=height)
 canvas.pack()
 analyzeButton = tkinter.Button(root, text="Analyze", command=lambda: fourier(f))
-analyzeButton.pack()
+analyzeButton.pack(side="left")
 resetButton = tkinter.Button(root, text="Reset", command=lambda: reset())
-resetButton.pack()
+resetButton.pack(side="left")
+pixelSizeInput = tkinter.Entry(root, width=10)
+pixelSizeInput.pack(side="right")
+pixelSizeInput.insert(0, "8")
+pixelSizeInput.bind("<Return>", lambda event: setPixelSize())
+pixelSizeLabel = tkinter.Label(root, text="Pixel Size:")
+pixelSizeLabel.pack(side="right")
 
 # Function class
 class PlotFunction(Function):
@@ -63,12 +70,15 @@ def reset():
     f.reset()
     canvas.delete("all")
 
-# Draw Function
+def setPixelSize():
+    global f
+    f = PlotFunction(width//int(pixelSizeInput.get()), int(pixelSizeInput.get()))
+    reset()
+    getFunction()
+    # remove old plt plots
+    plt.close("all")
 
-print("starting")
-size = 2**7
-f=PlotFunction(width//size, size)
-getFunction()
+setPixelSize()
 root.mainloop()
 
 
