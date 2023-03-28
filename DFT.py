@@ -110,7 +110,7 @@ def fourier(f:Function, fast=2):
     delta = time.time() - starttime
     #print(f"{'FFT'if fast else 'DFT'} done in {delta} seconds")
     #barchart
-    maxFreq = min(100, N)
+    maxFreq = N
 
     # print("\nContributing frequencies:")
     # for i in range(1, f.N):
@@ -138,6 +138,9 @@ def fourier(f:Function, fast=2):
 
     # IFFT
     starttime = time.time()
+    F*=2
+    F[[0, N//2]]*=.5
+    x = np.concatenate((F[:N//2+1], np.zeros(N//2-1)))
     if fast: A = IFFT(F)
     else: A = IDFT(F)
     delta = time.time() - starttime

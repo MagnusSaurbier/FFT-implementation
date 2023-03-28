@@ -33,10 +33,10 @@ x = np.arange(0, 2 * CHUNK, 2)
 x_freqs = np.linspace(0, 2*RATE, CHUNK)
 
 line, = ax[0].plot(x, np.random.rand(CHUNK))
-ax[0].set_ylim(0, 256)
+ax[0].set_ylim(-512, 512)
 ax[0].set_xlim(0, CHUNK)
 freqs, = ax[1].semilogx(x_freqs, np.random.rand(CHUNK))
-ax[1].set_ylim(0, 20)
+ax[1].set_ylim(0, 512)
 ax[1].set_xlim(20, RATE/2)
 # Normalize to Hertz on x axis
 ax[1].set_xscale('log')
@@ -47,9 +47,10 @@ plt.ion()
 plt.show()
 while True:
     binary = stream.read(CHUNK, exception_on_overflow=False)
-    value = struct.unpack(str(2 * CHUNK) + 'B', binary)
-    plot_value = np.array(value, dtype="b")[::2]+128 #convert to signed int
-    line.set_ydata(plot_value)
+    #value = struct.unpack(str(2 * CHUNK) + 'B', binary)
+    #plot_value = np.array(value, dtype="int8")[::2]#convert to signed int
+    value = np.frombuffer(binary, dtype=np.int16)
+    line.set_ydata(value)
 
     fft = [abs(y) for y in FFT(value[:CHUNK])]
     m = max(fft[1:CHUNK//4])
