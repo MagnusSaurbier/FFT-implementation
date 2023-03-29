@@ -56,7 +56,7 @@ def IDFT(F):
 
 def FFT(F):
     """Fast Fourier Transform of F, with M samples"""
-    if len(F) == 1: return [F[0]]
+    if len(F) == 1: return F
     A0 = FFT(F[::2])
     A1 = FFT(F[1::2])
     w = exp(-2j*pi/len(F))
@@ -65,32 +65,20 @@ def FFT(F):
         .5 * (A0[k%m] + A1[k%m] * w**k)
             for k in range(len(F))])
 
-def FFTnp(F):
-    """Fast Fourier Transform of F, with M samples using numpy"""
-    M = F.shape[0]
-    if M == 1: return F
-    A0 = FFTnp(F[::2])
-    A1 = FFTnp(F[1::2])
-    Wk = np.exp(-2j*pi*np.arange(M//2)/M)
-    return .5*(np.concatenate((A0+A1*Wk, A0-A1*Wk)))
-
-def FFTnp2(F):
-    """Fast Fourier Transform of F, with M samples using numpy"""
-
-    #print("generating points")
-    starttime = time.time()
-    points = np.array(F)
-    #print("points generated time:", time.time()-starttime)
-    starttime = time.time()
-    #print("numpy starting")
-    result = np.fft.fft(points)
-    #print("numpy done time:", time.time()-starttime)
-    return result
-
+def FFT2(F, wk=None, A=None, left=0, right=-1):
+    if left+1==right: return F
+    if right == -1:
+        right = len(F)
+        wk = np.exp(-2j*pi/len(F) * np.arange(len(F)))
+        A = np.empty(len(F), dtype=complex)
+    A0 = FFT2(F, wk, A, left, (left+right)//2)[left:right]
+    A1 = FFT2(F, wk,A, (left+right)//2, right)[left:right]
+    A[left:right] = .5 * (A0 + A1 * wk[left:right])
+    return A
 
 def IFFT(F):
     """Inverse Fast Fourier Transform of Ak"""
-    if len(F) == 1: return [F[0]]
+    if len(F) == 1: return F
     A0 = IFFT(F[::2])
     A1 = IFFT(F[1::2])
     w = exp(2j*pi/len(F))
@@ -99,14 +87,13 @@ def IFFT(F):
         (A0[k%m] + A1[k%m] * w**k)
             for k in range(len(F))])
 
-def fourier(f:Function, fast=2):
+def fourier(f:Function, fast=1):
     f = f.toArray()
     starttime = time.time()
     N = len(f)
     if fast==0: F = DFT(f)
     elif fast==1: F = FFT(f)
-    elif fast==2: F = FFTnp(np.array(f))
-    elif fast==3: F = FFTnp2(f)
+    elif fast==2: F = FFT2(f)
     delta = time.time() - starttime
     #print(f"{'FFT'if fast else 'DFT'} done in {delta} seconds")
     #barchart
@@ -117,10 +104,11 @@ def fourier(f:Function, fast=2):
     #     if abs(F[i]) > 5: print("f =", i, "amplitude =", F[i])
 
     plt.figure(0)
-    plt.bar(range(maxFreq), [abs(x) for x in F[:maxFreq]])
+    plt.bar(range(maxFreq), [np.real(x) for x in F[:maxFreq]])
     plt.title(f"{'FFT'if fast else 'DFT'} of g")
     plt.xlabel("Frequency")
-    plt.ylabel("Coefficient")
+    plt.ylabel("Coefficient (abs)")
+    
     #plt.show()
 
     # # Compression
@@ -136,11 +124,11 @@ def fourier(f:Function, fast=2):
     # plt.xlabel("x")
     # plt.ylabel("y")
 
-    # IFFT
+    IFFT
     starttime = time.time()
-    F*=2
-    F[[0, N//2]]*=.5
-    x = np.concatenate((F[:N//2+1], np.zeros(N//2-1)))
+    # F*=2
+    # F[[0, N//2]]*=.5
+    # x = np.concatenate((F[:N//2+1], np.zeros(N//2-1)))
     if fast: A = IFFT(F)
     else: A = IDFT(F)
     delta = time.time() - starttime
@@ -161,7 +149,7 @@ def fourier(f:Function, fast=2):
     plt.show()
 
 def speedTest():
-    N = 2**18
+    N = 2**20
     g = CombinedFunction().synthesize(N, [(1,50), (5, 10), (20, 3)])
     
     starttime=time.time()
@@ -170,13 +158,12 @@ def speedTest():
 
     starttime=time.time()
     fourier(g, 2)
-    print("FFTnp: ", time.time()-starttime)
+    print("FFT2: ", time.time()-starttime)
 
-    starttime=time.time()
-    fourier(g, 3)
-    print("FFTnp2: ", time.time()-starttime)
-
-#speedTest()
+if __name__ == "__main__":
+    speedTest()
+    # fourier(CombinedFunction().synthesize(2**10, [(1,50), (5, 10), (20, 3)]), 1)
+    # fourier(CombinedFunction().synthesize(2**10, [(1,50), (5, 10), (20, 3)]), 2)
 
 # # Plot the FFT of a sine wave
 # fast = 2
